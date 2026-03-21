@@ -1,0 +1,287 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{fontawesome5}
+\usetheme{metropolis}  
+\usepackage[export]{adjustbox}
+%\usecolortheme{owl}         % Use metropolis theme
+\title{(Distributed) Particle Filters: Concepts, Design, and a Field-Based Perspective}
+
+\date{\today}
+\author{\alert{Davide Domini}}
+\institute{
+%University of Bologna, Cesena \\ 
+PSLab Reading Group\\[0.5cm] 
+{
+\hfill\includegraphics[width=0.5\textwidth,right]{images/dep-logo.pdf}
+}
+}
+\newcommand{\hsplit}[2]{
+\begin{minipage}{0.48\textwidth}
+#1
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+#2
+\end{minipage}
+}
+\newcommand{\hsplits}[4]{
+\begin{minipage}{#1\textwidth}
+#3
+\end{minipage}
+\hfill
+\begin{minipage}{#2\textwidth}
+#4
+\end{minipage}
+}
+
+
+\newcommand{\lbl}[1]{\textbf{\textcolor{gray!90!white}{#1}}}
+\newcommand{\bo}[1]{\textbf{#1}}
+
+
+\begin{document}
+\maketitle
+
+
+\begin{frame}[standout]
+	\Huge\textbf{Motivation}
+\end{frame}
+
+\begin{frame}{State Estimation of Dynamic Systems}
+
+\begin{itemize}
+    \item Many cyber-physical systems rely on \textbf{estimating hidden dynamical states over time}
+    \item Typical examples: 
+    \begin{itemize}
+        \item Target tracking (position + velocity)
+        \item Environmental monitoring (temperature, pollution fields)
+    \end{itemize}
+    \item In all these cases:
+    \begin{itemize}
+        \item \textbf{the system state is not directly observable}
+        \item \textbf{we only get noisy and partial measurements}
+    \end{itemize}
+\end{itemize}
+\vspace{0.5cm}
+
+Core problem: \alert{\textit{reconstruct latent dynamics from uncertain observations}}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Bayesian Inference}
+\begin{itemize}
+    \item Goal: \textbf{estimation of unknown parameters ($\theta$) from observed data ($D$)}
+    \item \textit{Prior} $P(\theta)$: belief about the parameter before observing data
+    \item \textit{Likelihood} $P(D \mid \theta)$: how compatible the observed data is with a given parameter value
+    \item \textit{Posterior} $P(\theta \mid D)$: updated belief after observing data
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{center}
+$P(\theta \mid D) = \frac{P(D \mid \theta) P(\theta)}{P(D)}$
+\end{center}
+
+\vspace{0.5cm}
+
+\textit{Intuition:} start from a prior belief, observe data, and update the estimate accordingly
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{From Bayesian Inference to Particle Filters}
+
+In principle, Bayesian inference provides a complete solution to state estimation:
+
+\begin{center}
+$P(x_t \mid y_1, \dots, y_t)$
+\end{center}
+
+Where:
+\begin{itemize}
+  \item $y_1, \dots, y_t$ are the \textbf{noisy observations} up to time $t$
+  \item $x_t$ is the \textbf{hidden state} at time $t$
+\end{itemize}
+
+\vspace{0.5cm}
+
+However, computing this distribution exactly is \textbf{tractable} only under strong assumptions:
+
+\begin{itemize}
+  \item linear system dynamics
+  \item linear observation model
+  \item Gaussian noise
+\end{itemize}
+
+\vspace{0.5cm}
+
+Under these conditions, the posterior remains Gaussian and can be computed analytically using the \textit{Kalman filter}.
+
+\vspace{0.6cm}
+
+In many real-world scenarios, these assumptions do not hold:
+
+\begin{itemize}
+  \item systems are \textit{nonlinear}
+  \item noise is \textit{non-Gaussian}
+  \item the posterior can be \textit{complex or multimodal}
+\end{itemize}
+
+\vspace{0.6cm}
+
+As a result, exact Bayesian inference becomes intractable, motivating the use of more general filtering methods.
+\end{frame}
+
+%================================================
+\begin{frame}[standout]
+	\Huge\textbf{Particle Filters}
+\end{frame}
+
+\begin{frame}{Centralized Particle Filters}
+
+\begin{itemize}
+    \item We assume a centralized setting: all measurements are available to a single estimator
+    \item Particle filtering is useful when the posterior is too complex to compute analytically
+\end{itemize}
+
+\vspace{0.25cm}
+
+\[
+\begin{cases}
+x_{k+1} = f_k(x_k, v_k) \\[4pt]
+z_k = h_k(x_k, n_k)
+\end{cases}
+\]
+
+\vspace{0.2cm}
+
+\begin{itemize}
+    \item $x_k$: hidden state at time $k$
+    \item $z_k$: measurement at time $k$
+    \item $f_k$ and $h_k$ may be nonlinear, and noises need not be Gaussian
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{The Bayesian filtering problem}
+
+\begin{itemize}
+    \item At time $k$, the objective is to estimate the posterior distribution
+
+        \[
+        p(x_k \mid z_{1:k})
+        \]
+
+    
+    \item Recursive Bayesian filtering has two steps:
+
+        \[
+        p(x_k \mid z_{1:k-1})
+        =
+        \int p(x_k \mid x_{k-1}) p(x_{k-1} \mid z_{1:k-1}) \, dx_{k-1}
+        \]
+
+        \[
+        p(x_k \mid z_{1:k})
+        =
+        \frac{
+        p(z_k \mid x_k) p(x_k \mid z_{1:k-1})
+        }{
+        \int p(z_k \mid x_k) p(x_k \mid z_{1:k-1}) \, dx_k
+        }
+        \]
+
+    \item The first integral is the prediction step
+    % \item The denominator in the second equation is the normalization constant.
+    \item In nonlinear / non-Gaussian models, these integrals are generally intractable
+\end{itemize}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Why particles?}
+
+\begin{itemize}
+    \item Particle filtering replaces intractable integrals with Monte Carlo approximations
+    \item The posterior is represented by a finite set of weighted samples
+        \[
+        p(x_k \mid z_{1:k})
+        \approx
+        \sum_{i=1}^{N_s} w_k^i \, \delta(x_k - x_k^i)
+        \]
+    \item Each particle $x_k^i$ is a candidate hypothesis for the state
+    \item Each weight $w_k^i$ quantifies how plausible that hypothesis is
+    \item The Dirac delta $\delta(\cdot)$ means that probability mass is concentrated on sampled locations
+\end{itemize}
+
+\vspace{0.2cm}
+
+\textbf{Particles are not just points: together, they form a discrete approximation of the posterior}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{What do particles actually approximate?}
+
+\begin{itemize}
+    \item The key point is that particles approximate expectations under the posterior
+    \item For any function $g(\cdot)$
+        \[
+        \int g(x_k) p(x_k \mid z_{1:k}) \, dx_k
+        \approx
+        \sum_{i=1}^{N_s} w_k^i g(x_k^i)
+        \]
+    \item Hence, difficult integrals become weighted sums
+    \item This is what makes particle methods computationally useful
+    \item Important example: posterior mean / MMSE estimate
+        \[
+        \hat{x}_k
+        \approx
+        \sum_{i=1}^{N_s} w_k^i x_k^i
+        \]
+\end{itemize}
+
+
+
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Importance sampling}
+
+\begin{itemize}
+    \item We usually cannot sample directly from the posterior $p(x_k \mid z_{1:k})$
+    \item Instead, we sample from a proposal distribution $q(x_k \mid z_{1:k})$ and then correct via weights
+        \[
+        \tilde{x}_k^i \sim q(x_k \mid z_{1:k})
+        \]
+
+        \[
+        p(x_k \mid z_{1:k})
+        \approx
+        \sum_{i=1}^{N_s} \tilde{w}_k^i \delta(x_k - \tilde{x}_k^i)
+        \]
+
+        \[
+        \tilde{w}_k^i
+        \propto
+        \frac{
+        p(\tilde{x}_k^i \mid z_{1:k})
+        }{
+        q(\tilde{x}_k^i \mid z_{1:k})
+        }
+        \]
+    \item Intuition:
+    \begin{itemize}
+        \item sample from a tractable distribution
+        \item reweight to recover the target posterior
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\end{document}
