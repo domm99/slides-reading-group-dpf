@@ -1,4 +1,5 @@
 \documentclass[aspectratio=169]{beamer}
+\usepackage{subcaption}
 \usepackage{fontawesome5}
 \usetheme{metropolis}  
 \usepackage[export]{adjustbox}
@@ -232,6 +233,30 @@ z_k = h_k(x_k, n_k)
 \textbf{Particles are not just points: together, they form a discrete approximation of the posterior}
 
 \end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Particles visualization}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{images/particles-distribution/step_0.pdf}
+    \end{subfigure}
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{images/particles-distribution/step_1000.pdf}
+    \end{subfigure}
+
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{images/particles-distribution/step_2000.pdf}
+    \end{subfigure}
+    \begin{subfigure}{0.32\textwidth}
+        \includegraphics[width=\textwidth]{images/particles-distribution/step_2900.pdf}
+    \end{subfigure}
+\end{figure}
+
+\end{frame}
+
 
 %------------------------------------------------
 
