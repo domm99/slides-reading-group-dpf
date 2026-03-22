@@ -120,8 +120,8 @@ Where:
 However, computing this distribution exactly is \textbf{tractable} only under strong assumptions:
 
 \begin{itemize}
-  \item linear system dynamics
-  \item linear observation model
+  \item Linear system dynamics
+  \item Linear observation model
   \item Gaussian noise
 \end{itemize}
 
@@ -319,5 +319,402 @@ z_k = h_k(x_k, n_k)
 \end{itemize}
 
 \end{frame}
+
+
+\begin{frame}[allowframebreaks]{High-level Particle Filter Algorithm}
+
+\begin{enumerate}
+    \item \textbf{Initialize} a set of particles $\{x_0^i\}_{i=1}^{N_s}$ and associated weights $\{w_0^i\}_{i=1}^{N_s}$
+    
+    \vspace{0.2cm}
+    
+    \item For each time step $k = 1, 2, \dots$:
+    \begin{enumerate}
+        \item \textbf{Prediction:} propagate each particle through the dynamics / proposal model
+        \[
+        x_k^i \sim q(x_k \mid x_{k-1}^i, z_k)
+        \]
+        
+        \item \textbf{Weighting:} update the importance weights using the new observation
+        \[
+        w_k^i \propto w_{k-1}^i \,
+        \frac{
+        p(z_k \mid x_k^i)\, p(x_k^i \mid x_{k-1}^i)
+        }{
+        q(x_k^i \mid x_{k-1}^i, z_k)
+        }
+        \]
+        
+        \item \textbf{Normalize} the weights so that
+        \[
+        \sum_{i=1}^{N_s} w_k^i = 1
+        \]
+        
+        \item \textbf{Resample}
+    \end{enumerate}
+    
+    \vspace{0.2cm}
+    
+    \item Compute the state estimate, e.g. the MMSE estimate
+    \[
+    \hat{x}_k \approx \sum_{i=1}^{N_s} w_k^i x_k^i
+    \]
+\end{enumerate}
+
+\end{frame}
+
+%================================================
+\begin{frame}[standout]
+	\Huge\textbf{Distributed Particle Filters}
+\end{frame}
+
+\begin{frame}{Why Distributed Particle Filters?}
+
+\begin{itemize}
+    \item In many networked systems, observations are collected by multiple spatially distributed agents
+    \item A centralized particle filter assumes that all measurements are available in one place
+    \item In practice, this assumption is often unrealistic because of:
+    \begin{itemize}
+        \item limited bandwidth
+        \item energy constraints
+        \item latency
+        \item topology changes
+        \item node and link failures
+    \end{itemize}
+    \item The challenge is therefore to approximate the global posterior while keeping communication and computation affordable
+\end{itemize}
+
+\textbf{Main design question:} how do we distribute filtering without losing too much estimation quality?
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{From Centralized PF to Distributed PF}
+
+\begin{itemize}
+    \item The filtering logic is conceptually the same:
+    \begin{itemize}
+        \item prediction
+        \item weighting
+        \item resampling
+    \end{itemize}
+    \item The difference is architectural:
+    \begin{itemize}
+        \item measurements are local
+        \item communication is constrained
+        \item no node may have full global information
+    \end{itemize}
+    \item As a consequence, the key issue is no longer only \emph{how to evolve particles},
+    but also \emph{where information is processed and how it is exchanged}
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Hence, DPF is mainly a coordination problem on top of the PF machinery}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{A High-Level Taxonomy of DPF Architectures}
+
+\begin{itemize}
+    \item A first fundamental distinction is whether a \textbf{fusion center} is present or not
+    \item If a fusion center is present:
+    \begin{itemize}
+        \item local agents process measurements
+        \item local results are sent to a central node for fusion
+    \end{itemize}
+    \item If no fusion center is present, the scheme is decentralized
+    \item Decentralized schemes can be further divided into:
+    \begin{itemize}
+        \item \textbf{Leader-agent based} DPF
+        \item \textbf{Consensus-based} DPF
+    \end{itemize}
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Main trade-off:} estimation quality vs communication burden vs robustness
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{State Estimation of Dynamic Systems (II)}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/pfs.pdf}
+\end{figure}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Fusion Center-Based DPF}
+
+\begin{itemize}
+    \item Each agent processes its own measurements locally
+    \item Local posteriors / local estimates are then reported to a \textbf{fusion center}
+    \item The fusion center combines the received information and computes the global estimate
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Why this is attractive:}
+\begin{itemize}
+    \item conceptually simple
+    \item easy to organize
+    \item global decision is available in one place
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Typical use case:}
+\begin{itemize}
+    \item applications where global knowledge is only needed at one node
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Fusion Center-Based DPF: Pros and Cons}
+
+\textbf{Advantages}
+\begin{itemize}
+    \item simple architecture
+    \item easy fusion logic
+    \item often good estimation quality
+    \item natural if the application already has a central decision-maker
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Drawbacks}
+\begin{itemize}
+    \item single point of failure
+    \item poor robustness against fusion-center faults
+    \item high communication burden near the fusion center
+    \item strong dependence on network topology
+    \item topology changes may require route reconfiguration
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Reducing the Burden: Clustered / Two-Tier Architectures}
+
+\begin{itemize}
+    \item A common refinement of the fusion-center architecture is a \textbf{two-tier structure}
+    \item Some selected nodes act as \textbf{cluster heads}
+    \item Nearby sensors send raw measurements or local summaries to the cluster head
+    \item Cluster heads then communicate with the fusion center
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Why useful:}
+\begin{itemize}
+    \item reduces long-distance communication
+    \item avoids requiring every sensor to talk directly to the fusion center
+\end{itemize}
+
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Leader-Agent Based DPF}
+
+\begin{itemize}
+    \item No fixed fusion center is assumed
+    \item Instead, only a subset of agents is activated for global estimation
+    \item A sequence of nodes forms a \textbf{leader-agent path}
+    \item Along this path, local information is accumulated and propagated
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Key idea:}
+\begin{itemize}
+    \item global estimation is not done by everyone
+    \item it is delegated to selected nodes, dynamically chosen in the network
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Leader-Agent Based DPF: Pros and Cons}
+
+\textbf{Advantages}
+\begin{itemize}
+    \item avoids a permanently fixed central node
+    \item can reduce communication compared with fully decentralized schemes
+    \item may exploit informative nodes more efficiently
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Drawbacks}
+\begin{itemize}
+    \item performance depends on how leaders are selected
+    \item dynamic leader selection affects both accuracy and energy consumption
+    \item still exposes the system to coordination overhead
+    \item less robust than fully decentralized approaches if leadership is fragile
+\end{itemize}
+
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Consensus-Based DPF}
+
+\begin{itemize}
+    \item All agents participate in the filtering process
+    \item No fusion center and no privileged node are required
+    \item Agents exchange information iteratively in order to reach agreement, or at least consistent local beliefs
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{High-level intuition:}
+\begin{itemize}
+    \item each node has only local information
+    \item repeated communication spreads this information through the network
+    \item local estimates progressively become more globally informed
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Consensus-Based DPF: Pros and Cons}
+
+\textbf{Advantages}
+\begin{itemize}
+    \item high robustness to node failures
+    \item enhanced scalability
+    \item better adaptability to topology changes
+    \item no single point of failure
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{Drawbacks}
+\begin{itemize}
+    \item heavier communication demand
+    \item possible delay due to consensus iterations
+    \item synchronization and consistency can become nontrivial
+    \item in some cases, agreement itself is not the real objective
+\end{itemize}
+
+
+\end{frame}
+
+% %------------------------------------------------
+
+% \begin{frame}{Beyond Consensus: Diffusion-Style Intuition}
+
+% \begin{itemize}
+%     \item In distributed estimation more broadly, consensus is not always the only option.
+%     \item Diffusion strategies relax the idea that all nodes must reach exactly the same estimate.
+%     \item The emphasis shifts from global agreement to effective local cooperation.
+% \end{itemize}
+
+% \vspace{0.3cm}
+
+% \textbf{Why this matters conceptually for DPF:}
+% \begin{itemize}
+%     \item the real goal is not agreement per se
+%     \item the real goal is good estimation under communication constraints
+% \end{itemize}
+
+% \vspace{0.3cm}
+
+% \textbf{Takeaway:}
+% \begin{itemize}
+%     \item different architectures encode different notions of cooperation
+% \end{itemize}
+
+% \end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{What Makes DPF Hard in Practice?}
+
+\begin{itemize}
+    \item Particle filters require many particles to represent the posterior
+    \item Exchanging particle-related information across nodes can be very expensive
+    \item In networked settings, estimation quality is shaped not only by the model, but also by:
+    \begin{itemize}
+        \item communication delays
+        \item packet drops
+        \item topology changes
+        \item local computation limits
+    \end{itemize}
+    \item Therefore, DPF is always a compromise between:
+    \begin{itemize}
+        \item accuracy
+        \item communication overhead
+        \item computation complexity
+        \item robustness
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{What Should We Be Careful About?}
+
+\begin{itemize}
+    \item \textbf{Communication cost:} exchanging particles, weights, or local likelihoods can dominate the whole method
+    \item \textbf{Topology sensitivity:} some architectures break or degrade severely when the network changes
+    \item \textbf{Delay and asynchrony:} iterative coordination may become stale before convergence
+    \item \textbf{Robustness:} architectures centered around special nodes are more fragile
+    \item \textbf{Load imbalance:} some nodes may become communication or computation bottlenecks
+    \item \textbf{Information granularity:} raw measurements, local posteriors, particles, and likelihood summaries have very different costs
+\end{itemize}
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{A Design-Space View of DPF}
+
+\begin{itemize}
+    \item DPF is not a single algorithmic recipe
+    \item It is a family of solutions defined by a few major design choices:
+    \begin{itemize}
+        \item where fusion happens
+        \item who performs the filtering
+        \item what information is exchanged
+        \item how often coordination happens
+    \end{itemize}
+    \item Different choices induce different trade-offs
+\end{itemize}
+
+\vspace{0.3cm}
+
+\textbf{In short:}
+\begin{itemize}
+    \item fusion center $\rightarrow$ simple but fragile
+    \item leader-agent $\rightarrow$ lighter but coordination-dependent
+    \item consensus-based $\rightarrow$ robust but communication-heavy
+\end{itemize}
+
+\end{frame}
+
+%================================================
+\begin{frame}[standout]
+	\Huge\textbf{A Field-Based Perspective}
+\end{frame}
+
 
 \end{document}
