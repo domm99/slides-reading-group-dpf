@@ -744,7 +744,7 @@ z_k = h_k(x_k, n_k)
 \end{itemize}
 
 \vspace{0.5em}
-\textbf{Take-away:} the field-based view turns architectural assumptions into \emph{design parameters}, rather than hard-coded algorithmic commitments.
+\textbf{Take-away:} the field-based view turns architectural assumptions into \emph{design parameters}, rather than hard-coded algorithmic commitments
 \end{frame}
 
 \begin{frame}{What becomes configurable?}
@@ -806,31 +806,6 @@ z_k = h_k(x_k, n_k)
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Field-based view: the big picture}
-\begin{itemize}
-    \item The contribution is mainly a \textbf{design-space reframing}
-    \item DPF is described as a family of field computations where we can compose:
-    \begin{itemize}
-        \item sensing / aggregation
-        \item information dissemination
-        \item fusion placement
-        \item activation scope
-    \end{itemize}
-    \item This is especially relevant in IoT-like settings, where assumptions on:
-    \begin{itemize}
-        \item connectivity,
-        \item density,
-        \item sensing quality,
-        \item and node reliability
-    \end{itemize}
-    \item are weak and may change over time
-\end{itemize}
-
-\vspace{0.5em}
-\centering
-\textbf{In short:} same estimation goal, but more flexibility in how the distributed system realizes it.
-\end{frame}
-
 %================================================
 \begin{frame}[standout]
 	\Huge\textbf{Experimental Evaluation}
@@ -887,6 +862,13 @@ Main variable:
     \item aggregating raw local observations can substantially improve weighting quality
     \item and it does so \textbf{without} exchanging particle sets
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Experiment 1: local PF + aggregated measurements (II)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/rmse.pdf}
+\end{figure}
 \end{frame}
 
 \begin{frame}{Experiment 2: elected leader as fusion center (I)}
