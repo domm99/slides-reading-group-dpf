@@ -289,38 +289,38 @@ z_k = h_k(x_k, n_k)
 
 %------------------------------------------------
 
-\begin{frame}{Importance sampling}
+% \begin{frame}{Importance sampling}
 
-\begin{itemize}
-    \item We usually cannot sample directly from the posterior $p(x_k \mid z_{1:k})$
-    \item Instead, we sample from a proposal distribution $q(x_k \mid z_{1:k})$ and then correct via weights
-        \[
-        \tilde{x}_k^i \sim q(x_k \mid z_{1:k})
-        \]
+% \begin{itemize}
+%     \item We usually cannot sample directly from the posterior $p(x_k \mid z_{1:k})$
+%     \item Instead, we sample from a proposal distribution $q(x_k \mid z_{1:k})$ and then correct via weights
+%         \[
+%         \tilde{x}_k^i \sim q(x_k \mid z_{1:k})
+%         \]
 
-        \[
-        p(x_k \mid z_{1:k})
-        \approx
-        \sum_{i=1}^{N_s} \tilde{w}_k^i \delta(x_k - \tilde{x}_k^i)
-        \]
+%         \[
+%         p(x_k \mid z_{1:k})
+%         \approx
+%         \sum_{i=1}^{N_s} \tilde{w}_k^i \delta(x_k - \tilde{x}_k^i)
+%         \]
 
-        \[
-        \tilde{w}_k^i
-        \propto
-        \frac{
-        p(\tilde{x}_k^i \mid z_{1:k})
-        }{
-        q(\tilde{x}_k^i \mid z_{1:k})
-        }
-        \]
-    \item Intuition:
-    \begin{itemize}
-        \item sample from a tractable distribution
-        \item reweight to recover the target posterior
-    \end{itemize}
-\end{itemize}
+%         \[
+%         \tilde{w}_k^i
+%         \propto
+%         \frac{
+%         p(\tilde{x}_k^i \mid z_{1:k})
+%         }{
+%         q(\tilde{x}_k^i \mid z_{1:k})
+%         }
+%         \]
+%     \item Intuition:
+%     \begin{itemize}
+%         \item sample from a tractable distribution
+%         \item reweight to recover the target posterior
+%     \end{itemize}
+% \end{itemize}
 
-\end{frame}
+% \end{frame}
 
 
 \begin{frame}[allowframebreaks]{High-level Particle Filter Algorithm}
