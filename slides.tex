@@ -158,6 +158,8 @@ As a result, exact Bayesian inference becomes intractable, motivating the use of
 
 \vspace{0.25cm}
 
+The system evolution and observation model are defined as:
+
 \[
 \begin{cases}
 x_{k+1} = f_k(x_k, v_k) \\[4pt]
@@ -170,7 +172,7 @@ z_k = h_k(x_k, n_k)
 \begin{itemize}
     \item $x_k$: hidden state at time $k$
     \item $z_k$: measurement at time $k$
-    \item $f_k$ and $h_k$ may be nonlinear, and noises need not be Gaussian
+    \item $f_k$ and $h_k$ may be nonlinear, and noises ($v_k$ and $n_k$) need not be Gaussian
 \end{itemize}
 
 \end{frame}
@@ -216,7 +218,7 @@ z_k = h_k(x_k, n_k)
 \begin{frame}{Why particles?}
 
 \begin{itemize}
-    \item Particle filtering replaces intractable integrals with Monte Carlo approximations
+    \item Particle filtering replaces intractable integrals with \textbf{Monte Carlo approximations}
     \item The posterior is represented by a finite set of weighted samples
         \[
         p(x_k \mid z_{1:k})
@@ -371,9 +373,9 @@ z_k = h_k(x_k, n_k)
 \begin{frame}{Why Distributed Particle Filters?}
 
 \begin{itemize}
-    \item In many networked systems, observations are collected by multiple spatially distributed agents
+    \item In many networked systems, observations are collected by \textbf{multiple spatially distributed agents}
     \item A centralized particle filter assumes that all measurements are available in one place
-    \item In practice, this assumption is often unrealistic because of:
+    \item In practice, this assumption is often \textbf{unrealistic} because of:
     \begin{itemize}
         \item limited bandwidth
         \item energy constraints
@@ -649,7 +651,7 @@ z_k = h_k(x_k, n_k)
 \begin{frame}{What Makes DPF Hard in Practice?}
 
 \begin{itemize}
-    \item Particle filters require many particles to represent the posterior
+    \item Particle filters require \textbf{many particles} to represent the posterior
     \item Exchanging particle-related information across nodes can be very expensive
     \item In networked settings, estimation quality is shaped not only by the model, but also by:
     \begin{itemize}
@@ -690,7 +692,7 @@ z_k = h_k(x_k, n_k)
 
 \begin{itemize}
     \item DPF is not a single algorithmic recipe
-    \item It is a family of solutions defined by a few major design choices:
+    \item It is \textbf{a family of solutions} defined by a few major design choices:
     \begin{itemize}
         \item where fusion happens
         \item who performs the filtering
@@ -716,5 +718,195 @@ z_k = h_k(x_k, n_k)
 	\Huge\textbf{A Field-Based Perspective}
 \end{frame}
 
+\begin{frame}{How can a field-based perspective help DPF?}
+\begin{itemize}
+    \item The main point is \textbf{not} to introduce yet another DPF algorithm
+    \item The idea is to expose DPF as a \textbf{configurable coordination problem}
+    \item A field-based view helps decouple:
+    \begin{itemize}
+        \item \textbf{filtering logic} (prediction, weighting, resampling)
+        \item from \textbf{coordination choices} (where fusion happens, what is exchanged, how far information propagates)
+    \end{itemize}
+    \item This makes it easier to adapt the same estimator to:
+    \begin{itemize}
+        \item different network structures
+        \item topology changes and failures
+        \item heterogeneous sensing conditions
+    \end{itemize}
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Take-away:} the field-based view turns architectural assumptions into \emph{design parameters}, rather than hard-coded algorithmic commitments.
+\end{frame}
+
+\begin{frame}{What becomes configurable?}
+\begin{itemize}
+    \item \textbf{Where fusion happens}
+    \begin{itemize}
+        \item fixed fusion center / elected leader / fully decentralized local filters
+    \end{itemize}
+    \item \textbf{What information is exchanged}
+    \begin{itemize}
+        \item particles / weights / posterior summaries / likelihood surrogates / raw measurements
+    \end{itemize}
+    \item \textbf{How far information propagates}
+    \begin{itemize}
+        \item only local neighborhood /  selected regions / whole network
+    \end{itemize}
+    \item \textbf{Who is active in the computation}
+    \begin{itemize}
+        \item everybody / only relevant regions / leaders / partitions
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{A useful extra degree of freedom: aggregate measurements}
+\begin{itemize}
+    \item A particularly interesting option is to \textbf{share local measurements}, instead of exchanging particles
+    \item Each node still runs its own local particle filter
+    \item But the weighting step can exploit an \textbf{aggregated measurement function} built from neighboring observations
+\end{itemize}
+
+\vspace{0.4em}
+\[
+\hat{y}_t = H_{\mathcal{N}(k)}\!\left(\left\{ h_k(x_t, v_{k,t}) \right\}_{k \in \mathcal{N}} \right)
+\]
+
+\begin{itemize}
+    \item Intuition: nearby sensors collectively behave like a \textbf{distributed sensor}
+    \item This is attractive when local sensors are noisy, weak, or only partially informative
+    \item Communication can be much cheaper than exchanging particle sets
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Another benefit: resilient fusion-center behavior without a fixed center}
+\begin{itemize}
+    \item If a fusion-center architecture is desirable, the fusion role need not be statically assigned
+    \item It can be implemented through \textbf{leader election}
+    \item This preserves the simplicity of fusion-based estimation while improving:
+    \begin{itemize}
+        \item fault tolerance
+        \item adaptability to topology changes
+        \item self-healing after node failures
+    \end{itemize}
+    \item So, instead of choosing \emph{once and for all} between:
+    \begin{itemize}
+        \item centralized simplicity
+        \item and decentralized robustness
+    \end{itemize}
+    \item we can move along that spectrum through configuration
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Field-based view: the big picture}
+\begin{itemize}
+    \item The contribution is mainly a \textbf{design-space reframing}
+    \item DPF is described as a family of field computations where we can compose:
+    \begin{itemize}
+        \item sensing / aggregation
+        \item information dissemination
+        \item fusion placement
+        \item activation scope
+    \end{itemize}
+    \item This is especially relevant in IoT-like settings, where assumptions on:
+    \begin{itemize}
+        \item connectivity,
+        \item density,
+        \item sensing quality,
+        \item and node reliability
+    \end{itemize}
+    \item are weak and may change over time
+\end{itemize}
+
+\vspace{0.5em}
+\centering
+\textbf{In short:} same estimation goal, but more flexibility in how the distributed system realizes it.
+\end{frame}
+
+%================================================
+\begin{frame}[standout]
+	\Huge\textbf{Experimental Evaluation}
+\end{frame}
+
+\begin{frame}{Experimental setup}
+\begin{itemize}
+    \item Target tracking in a 2D space with a static network of \textbf{25 sensors}
+    \item Sensors are deployed on a perturbed spatial grid
+    \item The target follows a predefined \textbf{non-linear trajectory}
+    \item Sensors observe a signal whose quality degrades with distance
+    \item Each sensor executes at \textbf{1 Hz}; experiments last \textbf{3000} simulated seconds
+    \item Each configuration is repeated over \textbf{100 random seeds}
+\end{itemize}
+
+\vspace{0.5em}
+Two experiments:
+\begin{enumerate}
+    \item \textbf{Neighborhood measurement aggregation}: each node runs a local PF and aggregates neighboring measurements
+    \item \textbf{Leader-based fusion center}: one elected leader acts as fusion center, and leader failure is injected during execution
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Experiment 1: local PF + aggregated measurements (I)}
+
+\begin{itemize}
+    \item Each sensor keeps its \textbf{own local particle filter}
+    \item No particle exchange among neighbors
+    \item What changes is the \textbf{measurement used for weighting}
+    \item Neighboring observations are combined into a richer local view
+\end{itemize}
+
+\vspace{0.5em}
+Main variable:
+\[
+|\mathcal{N}| \in \{0,1,4,7\}
+\]
+
+\begin{itemize}
+    \item With very small neighborhoods, filters struggle to converge
+    \item Increasing neighborhood size improves information quality
+    \item Better measurements $\Rightarrow$ better trajectory reconstruction
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Experiment 1: local PF + aggregated measurements (II)}
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{images/trajectories.pdf}
+\end{figure}
+\vspace{0.5em}
+\begin{itemize}
+    \item aggregating raw local observations can substantially improve weighting quality
+    \item and it does so \textbf{without} exchanging particle sets
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Experiment 2: elected leader as fusion center (I)}
+
+\begin{itemize}
+    \item In the second experiment, an elected leader plays the role of fusion center
+    \item Measurements are progressively aggregated toward the leader
+    \item A \textbf{leader failure} is injected at time step 1500
+\end{itemize}
+
+\vspace{0.5em}
+What happens:
+\begin{itemize}
+    \item an initial transient appears during the first leader election
+    \item another transient appears when the current leader fails
+    \item after re-election, the new leader resumes tracking
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Key message:} fusion-center behavior can be retained, but with self-healing and without a permanently fixed central node
+
+\end{frame}
+
+\begin{frame}{Experiment 2: elected leader as fusion center (II)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/trajectories-fc-based.pdf}
+\end{figure}
+\end{frame}
 
 \end{document}
